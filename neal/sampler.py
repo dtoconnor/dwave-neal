@@ -269,16 +269,22 @@ class SimulatedAnnealingSampler(dimod.Sampler):
         if beta_range is None:
             beta_range = _default_ising_beta_range(linear, quadratic)
 
-        num_sweeps_per_beta = max(1, num_sweeps // 1000.0)
+         num_sweeps_per_beta = max(1, num_sweeps // 1000.0)
         num_betas = int(math.ceil(num_sweeps / num_sweeps_per_beta))
+        beta_ranges = []
+        num_beta_sum = [num_betas//(len(beta_range)-1) for _ in range(1, len(beta_range))]
+        num_beta_sum[-1] += num_betas - sum(num_beta_sum)
         if beta_schedule_type == "linear":
             # interpolate a linear beta schedule
-            beta_schedule = np.linspace(*beta_range, num=num_betas)
+            for i in range(1, len(beta_range)):
+                beta_ranges.append(np.linspace(beta_range[i - 1], beta_range[i], num_beta_sum[i - 1]))
         elif beta_schedule_type == "geometric":
             # interpolate a geometric beta schedule
-            beta_schedule = np.geomspace(*beta_range, num=num_betas)
+            for i in range(1, len(beta_range)):
+                beta_ranges.append(np.geomspace(beta_range[i - 1], beta_range[i], num_beta_sum[i - 1]))
         else:
             raise ValueError("Beta schedule type {} not implemented".format(beta_schedule_type))
+        beta_schedule = np.concatenate(beta_ranges)
 
         _generators = {
             'none': self._none_generator,
